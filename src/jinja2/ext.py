@@ -339,7 +339,9 @@ class InternationalizationExtension(Extension):
 
     def parse(self, parser: "Parser") -> t.Union[nodes.Node, t.List[nodes.Node]]:
         """Parse a translatable tag."""
-        lineno = next(parser.stream).lineno
+        token = next(parser.stream)
+        lineno, end_lineno = token.lineno, token.end_lineno
+        col, end_col = token.col, token.end_col
 
         context = None
         context_token = parser.stream.next_if("string")
@@ -453,7 +455,7 @@ class InternationalizationExtension(Extension):
             bool(referenced),
             num_called_num and have_plural,
         )
-        node.set_lineno(lineno)
+        node.set_loc(lineno, end_lineno, col, end_col)
         if plural_expr_assignment is not None:
             return [plural_expr_assignment, node]
         else:

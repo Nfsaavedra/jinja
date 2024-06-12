@@ -120,10 +120,19 @@ class Node(metaclass=NodeType):
     """
 
     fields: t.Tuple[str, ...] = ()
-    attributes: t.Tuple[str, ...] = ("lineno", "environment")
+    attributes: t.Tuple[str, ...] = (
+        "lineno",
+        "end_lineno",
+        "col",
+        "end_col",
+        "environment",
+    )
     abstract = True
 
     lineno: int
+    end_lineno: int
+    col: int
+    end_col: int
     environment: t.Optional["Environment"]
 
     def __init__(self, *fields: t.Any, **attributes: t.Any) -> None:
@@ -217,7 +226,14 @@ class Node(metaclass=NodeType):
             todo.extend(node.iter_child_nodes())
         return self
 
-    def set_lineno(self, lineno: int, override: bool = False) -> "Node":
+    def set_loc(
+        self,
+        lineno: int,
+        end_lineno: int,
+        col: int,
+        end_col: int,
+        override: bool = False,
+    ) -> "Node":
         """Set the line numbers of the node and children."""
         todo = deque([self])
         while todo:
@@ -225,6 +241,15 @@ class Node(metaclass=NodeType):
             if "lineno" in node.attributes:
                 if node.lineno is None or override:
                     node.lineno = lineno
+            if "end_lineno" in node.attributes:
+                if node.end_lineno is None or override:
+                    node.end_lineno = end_lineno
+            if "col" in node.attributes:
+                if node.col is None or override:
+                    node.col = col
+            if "end_col" in node.attributes:
+                if node.end_col is None or override:
+                    node.end_col = end_col
             todo.extend(node.iter_child_nodes())
         return self
 

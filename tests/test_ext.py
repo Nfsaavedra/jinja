@@ -155,6 +155,7 @@ class ExampleExtension(Extension):
     context_reference_node_cls = nodes.ContextReference
 
     def parse(self, parser):
+        token = next(parser.stream)
         return nodes.Output(
             [
                 self.call_method(
@@ -167,7 +168,7 @@ class ExampleExtension(Extension):
                     ],
                 )
             ]
-        ).set_lineno(next(parser.stream).lineno)
+        ).set_loc(token.lineno, token.end_lineno, token.col, token.end_col)
 
     def _dump(self, sandboxed, ext_attr, imported_object, context):
         return (
