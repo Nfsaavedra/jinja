@@ -196,24 +196,25 @@ class StreamFilterExtension(Extension):
     def interpolate(self, token):
         pos = 0
         end = len(token.value)
-        lineno = token.lineno
+        lineno, end_lineno = token.lineno, token.end_lineno
+        col, end_col = token.col, token.end_col
         while True:
             match = _gettext_re.search(token.value, pos)
             if match is None:
                 break
             value = token.value[pos : match.start()]
             if value:
-                yield Token(lineno, "data", value)
+                yield Token(lineno, col, end_lineno, end_col, "data", value)
             lineno += count_newlines(token.value)
-            yield Token(lineno, "variable_begin", None)
-            yield Token(lineno, "name", "gettext")
-            yield Token(lineno, "lparen", None)
-            yield Token(lineno, "string", match.group(1))
-            yield Token(lineno, "rparen", None)
-            yield Token(lineno, "variable_end", None)
+            yield Token(lineno, col, end_lineno, end_col, "variable_begin", None)
+            yield Token(lineno, col, end_lineno, end_col, "name", "gettext")
+            yield Token(lineno, col, end_lineno, end_col, "lparen", None)
+            yield Token(lineno, col, end_lineno, end_col, "string", match.group(1))
+            yield Token(lineno, col, end_lineno, end_col, "rparen", None)
+            yield Token(lineno, col, end_lineno, end_col, "variable_end", None)
             pos = match.end()
         if pos < end:
-            yield Token(lineno, "data", token.value[pos:])
+            yield Token(lineno, col, end_lineno, end_col, "data", token.value[pos:])
 
 
 class TestExtensions:

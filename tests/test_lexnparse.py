@@ -14,8 +14,8 @@ from jinja2.lexer import TokenStream
 
 class TestTokenStream:
     test_tokens = [
-        Token(1, TOKEN_BLOCK_BEGIN, ""),
-        Token(2, TOKEN_BLOCK_END, ""),
+        Token(1, 1, 1, 1, TOKEN_BLOCK_BEGIN, ""),
+        Token(2, 2, 2, 2, TOKEN_BLOCK_END, ""),
     ]
 
     def test_simple(self, env):
@@ -176,9 +176,12 @@ class TestLexer:
 </html>"""
         )
         for tok in tokens:
-            lineno, token_type, value = tok
+            lineno, col, end_lineno, end_col, token_type, value = tok
             if token_type == "name" and value == "item":
                 assert lineno == 5
+                assert col == 11
+                assert end_lineno == 5
+                assert end_col == 15
                 break
 
 

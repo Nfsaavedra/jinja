@@ -25,17 +25,18 @@ if t.TYPE_CHECKING:
     from .parser import Parser
 
     class _TranslationsBasic(te.Protocol):
-        def gettext(self, message: str) -> str: ...
+        def gettext(self, message: str) -> str:
+            ...
 
         def ngettext(self, singular: str, plural: str, n: int) -> str:
             pass
 
     class _TranslationsContext(_TranslationsBasic):
-        def pgettext(self, context: str, message: str) -> str: ...
+        def pgettext(self, context: str, message: str) -> str:
+            ...
 
-        def npgettext(
-            self, context: str, singular: str, plural: str, n: int
-        ) -> str: ...
+        def npgettext(self, context: str, singular: str, plural: str, n: int) -> str:
+            ...
 
     _SupportedTranslations = t.Union[_TranslationsBasic, _TranslationsContext]
 
@@ -723,7 +724,9 @@ class _CommentFinder:
     """
 
     def __init__(
-        self, tokens: t.Sequence[t.Tuple[int, str, str]], comment_tags: t.Sequence[str]
+        self,
+        tokens: t.Sequence[t.Tuple[int, int, int, int, str, str]],
+        comment_tags: t.Sequence[str],
     ) -> None:
         self.tokens = tokens
         self.comment_tags = comment_tags
@@ -732,7 +735,7 @@ class _CommentFinder:
 
     def find_backwards(self, offset: int) -> t.List[str]:
         try:
-            for _, token_type, token_value in reversed(
+            for _, _, _, _, token_type, token_value in reversed(
                 self.tokens[self.offset : offset]
             ):
                 if token_type in ("comment", "linecomment"):
@@ -749,7 +752,7 @@ class _CommentFinder:
     def find_comments(self, lineno: int) -> t.List[str]:
         if not self.comment_tags or self.last_lineno > lineno:
             return []
-        for idx, (token_lineno, _, _) in enumerate(self.tokens[self.offset :]):
+        for idx, (token_lineno, _, _, _, _, _) in enumerate(self.tokens[self.offset :]):
             if token_lineno > lineno:
                 return self.find_backwards(self.offset + idx)
         return self.find_backwards(len(self.tokens))

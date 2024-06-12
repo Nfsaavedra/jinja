@@ -268,6 +268,9 @@ class Failure:
 
 class Token(t.NamedTuple):
     lineno: int
+    col: int
+    end_lineno: int
+    end_col: int
     type: str
     value: str
 
@@ -333,7 +336,7 @@ class TokenStream:
         self.name = name
         self.filename = filename
         self.closed = False
-        self.current = Token(1, TOKEN_INITIAL, "")
+        self.current = Token(1, 1, 1, 1, TOKEN_INITIAL, "")
         next(self)
 
     def __iter__(self) -> TokenStreamIterator:
@@ -396,7 +399,14 @@ class TokenStream:
 
     def close(self) -> None:
         """Close the stream."""
-        self.current = Token(self.current.lineno, TOKEN_EOF, "")
+        self.current = Token(
+            self.current.lineno,
+            self.current.col,
+            self.current.end_lineno,
+            self.current.end_col,
+            TOKEN_EOF,
+            "",
+        )
         self._iter = iter(())
         self.closed = True
 
@@ -614,14 +624,14 @@ class Lexer:
 
     def wrap(
         self,
-        stream: t.Iterable[t.Tuple[int, str, str]],
+        stream: t.Iterable[t.Tuple[int, int, int, int, str, str]],
         name: t.Optional[str] = None,
         filename: t.Optional[str] = None,
     ) -> t.Iterator[Token]:
         """This is called with the stream as returned by `tokenize` and wraps
         every token in a :class:`Token` and converts the value.
         """
-        for lineno, token, value_str in stream:
+        for lineno, col, end_lineno, end_col, token, value_str in stream:
             if token in ignored_tokens:
                 continue
 
@@ -664,7 +674,7 @@ class Lexer:
             elif token == TOKEN_OPERATOR:
                 token = operators[value_str]
 
-            yield Token(lineno, token, value)
+            yield Token(lineno, col, end_lineno, end_col, token, value)
 
     def tokeniter(
         self,
@@ -672,7 +682,7 @@ class Lexer:
         name: t.Optional[str],
         filename: t.Optional[str] = None,
         state: t.Optional[str] = None,
-    ) -> t.Iterator[t.Tuple[int, str, str]]:
+    ) -> t.Iterator[t.Tuple[int, int, int, int, str, str]]:
         """This method tokenizes the text and returns the tokens in a
         generator. Use this method if you just want to tokenize a template.
 
@@ -680,6 +690,12 @@ class Lexer:
             Only ``\\n``, ``\\r\\n`` and ``\\r`` are treated as line
             breaks.
         """
+
+        def get_col(file_contents, position):
+            line_start = file_contents.rfind("\n", 0, position) + 1
+            column = position - line_start
+            return column
+
         lines = newline_re.split(source)[::2]
 
         if not self.keep_trailing_newline and lines[-1] == "":
@@ -765,7 +781,11 @@ class Lexer:
                         elif token == "#bygroup":
                             for key, value in m.groupdict().items():
                                 if value is not None:
-                                    yield lineno, key, value
+                                    col, end_col = get_col(source, m.start()), get_col(
+                                        source, m.end()
+                                    )
+                                    end_lineno = lineno + value.count("\n")
+                                    yield lineno, col, end_lineno, end_col, key, value
                                     lineno += value.count("\n")
                                     break
                             else:
@@ -776,11 +796,15 @@ class Lexer:
                         # normal group
                         else:
                             data = groups[idx]
+                            end_lineno = lineno + data.count("\n") + newlines_stripped
 
                             if data or token not in ignore_if_empty:
-                                yield lineno, token, data
+                                col, end_col = get_col(source, m.start()), get_col(
+                                    source, m.end()
+                                )
+                                yield lineno, col, end_lineno, end_col, token, data
 
-                            lineno += data.count("\n") + newlines_stripped
+                            lineno = end_lineno
                             newlines_stripped = 0
 
                 # strings as token just are yielded as it.
@@ -811,11 +835,15 @@ class Lexer:
                                     filename,
                                 )
 
+                    end_lineno = lineno + data.count("\n")
                     # yield items
                     if data or tokens not in ignore_if_empty:
-                        yield lineno, tokens, data
+                        col, end_col = get_col(source, m.start()), get_col(
+                            source, m.end()
+                        )
+                        yield lineno, col, end_lineno, end_col, tokens, data
 
-                    lineno += data.count("\n")
+                    lineno = end_lineno
 
                 line_starting = m.group()[-1:] == "\n"
                 # fetch new position into new variable so that we can check
