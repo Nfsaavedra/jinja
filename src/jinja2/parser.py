@@ -828,13 +828,25 @@ class Parser:
             attr_token = self.stream.current
             next(self.stream)
             if attr_token.type == "name":
+                loc = {
+                    "lineno": node.lineno,
+                    "col": node.col,
+                    "end_lineno": attr_token.end_lineno,
+                    "end_col": attr_token.end_col,
+                }
                 return nodes.Getattr(
-                    node, attr_token.value, "load", **self.__get_loc(token)
+                    node, attr_token.value, "load", **loc
                 )
             elif attr_token.type != "integer":
                 self.fail("expected name or number", attr_token.lineno)
             arg = nodes.Const(attr_token.value, **self.__get_loc(attr_token))
-            return nodes.Getitem(node, arg, "load", **self.__get_loc(token))
+            loc = {
+                "lineno": node.lineno,
+                "col": node.col,
+                "end_lineno": arg.end_lineno,
+                "end_col": arg.end_col,
+            }
+            return nodes.Getitem(node, arg, "load", **loc)
         if token.type == "lbracket":
             args: t.List[nodes.Expr] = []
             while self.stream.current.type != "rbracket":
@@ -846,7 +858,13 @@ class Parser:
                 arg = args[0]
             else:
                 arg = nodes.Tuple(args, "load", **self.__get_loc(token))
-            return nodes.Getitem(node, arg, "load", **self.__get_loc(token))
+            loc = {
+                "lineno": node.lineno,
+                "col": node.col,
+                "end_lineno": arg.end_lineno,
+                "end_col": arg.end_col,
+            }
+            return nodes.Getitem(node, arg, "load", **loc)
         self.fail("expected subscript expression", token.lineno)
 
     def parse_subscribed(self) -> nodes.Expr:
