@@ -799,9 +799,8 @@ class Lexer:
                             end_lineno = lineno + data.count("\n") + newlines_stripped
 
                             if data or token not in ignore_if_empty:
-                                col, end_col = get_col(source, m.start()), get_col(
-                                    source, m.end()
-                                )
+                                col = get_col(source, m.start())
+                                end_col = col + len(data)
                                 yield lineno, col, end_lineno, end_col, token, data
 
                             lineno = end_lineno
