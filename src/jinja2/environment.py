@@ -625,7 +625,7 @@ class Environment:
         source: str,
         name: t.Optional[str] = None,
         filename: t.Optional[str] = None,
-    ) -> t.Iterator[t.Tuple[int, str, str]]:
+    ) -> t.Iterator[t.Tuple[int, int, int, int, str, str]]:
         """Lex the given sourcecode and return a generator that yields
         tokens as tuples in the form ``(lineno, token_type, value)``.
         This can be useful for :ref:`extension development <writing-extensions>`
@@ -715,7 +715,8 @@ class Environment:
         filename: t.Optional[str] = None,
         raw: "te.Literal[False]" = False,
         defer_init: bool = False,
-    ) -> CodeType: ...
+    ) -> CodeType:
+        ...
 
     @typing.overload
     def compile(
@@ -725,7 +726,8 @@ class Environment:
         filename: t.Optional[str] = None,
         raw: "te.Literal[True]" = ...,
         defer_init: bool = False,
-    ) -> str: ...
+    ) -> str:
+        ...
 
     @internalcode
     def compile(
